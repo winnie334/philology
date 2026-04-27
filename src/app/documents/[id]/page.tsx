@@ -331,14 +331,21 @@ export default function DocumentViewer() {
                 canvas.height = viewport.height;
 
                 // Pre-processing: Sharp contrast helps the AI see faded ink
-                if (ctx) ctx.filter = 'grayscale(100%) contrast(150%)';
-
                 await page.render({canvasContext: ctx, viewport}).promise;
 
-                // --- THE CLEVER PAYLOAD MATH ---
-                // Switch to JPEG with 95% quality.
-                // This preserves text sharpness but reduces the payload size from ~15MB to ~2MB.
-                const base64Data = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+                const filteredCanvas = document.createElement('canvas');
+                const fctx = filteredCanvas.getContext('2d');
+
+                filteredCanvas.width = canvas.width;
+                filteredCanvas.height = canvas.height;
+
+                if (fctx) {
+                    fctx.filter = 'grayscale(100%) contrast(150%)';
+                    fctx.drawImage(canvas, 0, 0);
+                }
+
+                const base64Data = filteredCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
 
                 const res = await fetch('/api/transcribe', {
                     method: 'POST',
