@@ -7,6 +7,7 @@ export interface AppDocument {
     size: number;
     data: Blob;
     createdAt: number;
+    transcriptions: string[]; // one string per page
 }
 
 export class MyDatabase extends Dexie {
