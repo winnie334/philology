@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useRouter } from 'next/navigation';
-import { db, AppDocument } from '@/lib/db';
+import React, {useState, useRef, useCallback} from 'react';
+import {useLiveQuery} from 'dexie-react-hooks';
+import {useRouter} from 'next/navigation';
+import {db, AppDocument} from '@/lib/db';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,19 +25,21 @@ function formatDate(ts: number): string {
 
 function UploadIcon() {
     return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
+             strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
     );
 }
 
 function TrashIcon() {
     return (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+             strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
         </svg>
     );
 }
@@ -45,9 +47,12 @@ function TrashIcon() {
 function PdfFileIcon() {
     return (
         <svg width="22" height="26" viewBox="0 0 22 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 1H3C1.9 1 1 1.9 1 3v22c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9l-7-8z" fill="#FDFAF5" stroke="#D5C9B5" strokeWidth="1.2"/>
+            <path d="M14 1H3C1.9 1 1 1.9 1 3v22c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9l-7-8z" fill="#FDFAF5" stroke="#D5C9B5"
+                  strokeWidth="1.2"/>
             <path d="M14 1v8h7" stroke="#D5C9B5" strokeWidth="1.2" fill="none"/>
-            <text x="3.5" y="22" fontFamily="Georgia, serif" fontSize="6.5" fontWeight="700" fill="#B5732A" letterSpacing="0.3">PDF</text>
+            <text x="3.5" y="22" fontFamily="Georgia, serif" fontSize="6.5" fontWeight="700" fill="#B5732A"
+                  letterSpacing="0.3">PDF
+            </text>
         </svg>
     );
 }
@@ -72,10 +77,11 @@ function DocumentRow({
             className="group relative flex items-center gap-5 px-6 py-5 rounded-2xl border border-border bg-paper cursor-pointer transition-all duration-200 hover:border-accent/60 hover:shadow-[0_2px_20px_rgba(181,115,42,0.10)] hover:-translate-y-px"
         >
             {/* Left accent bar */}
-            <div className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-transparent group-hover:bg-accent transition-all duration-300" />
+            <div
+                className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-transparent group-hover:bg-accent transition-all duration-300"/>
 
             <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">
-                <PdfFileIcon />
+                <PdfFileIcon/>
             </div>
 
             <div className="flex-1 min-w-0">
@@ -96,7 +102,8 @@ function DocumentRow({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[11px] text-accent font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-lora">
+        <span
+            className="text-[11px] text-accent font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-lora">
           Open →
         </span>
                 <button
@@ -104,7 +111,7 @@ function DocumentRow({
                     className="opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-all duration-200 p-2 rounded-lg text-muted hover:text-danger hover:bg-danger/10"
                     title="Delete document"
                 >
-                    <TrashIcon />
+                    <TrashIcon/>
                 </button>
             </div>
         </li>
@@ -113,16 +120,18 @@ function DocumentRow({
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onUpload }: { onUpload: () => void }) {
+function EmptyState({onUpload}: { onUpload: () => void }) {
     return (
         <div className="flex flex-col items-center justify-center py-28 text-center animate-fade-in">
             <div className="relative mb-8">
-                <div className="w-24 h-24 rounded-3xl border-2 border-dashed border-border/80 flex items-center justify-center">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                        <line x1="12" y1="11" x2="12" y2="17" />
-                        <line x1="9" y1="14" x2="15" y2="14" />
+                <div
+                    className="w-24 h-24 rounded-3xl border-2 border-dashed border-border/80 flex items-center justify-center">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.3"
+                         strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="12" y1="11" x2="12" y2="17"/>
+                        <line x1="9" y1="14" x2="15" y2="14"/>
                     </svg>
                 </div>
             </div>
@@ -134,7 +143,7 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
                 onClick={onUpload}
                 className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl bg-ink text-paper font-lora text-sm font-medium hover:bg-ink-faint active:scale-[0.98] transition-all cursor-pointer"
             >
-                <UploadIcon />
+                <UploadIcon/>
                 Upload a document
             </button>
             <p className="text-xs text-muted/60 mt-4 font-lora">or drag & drop a PDF anywhere on this page</p>
@@ -161,7 +170,7 @@ export default function HomePage() {
         setUploading(true);
         try {
             for (const file of pdfs) {
-                const transcriptions = ["very solid transcription"];
+                const transcriptions = ['']
                 await db.documents.add({
                     name: file.name,
                     data: file,
@@ -211,7 +220,10 @@ export default function HomePage() {
     return (
         <div
             className="min-h-screen bg-parchment"
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+            }}
             onDragLeave={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
             }}
@@ -219,12 +231,14 @@ export default function HomePage() {
         >
             {/* Drag overlay */}
             {dragOver && (
-                <div className="fixed inset-0 z-50 bg-parchment/92 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
-                    <div className="border-2 border-dashed border-accent/60 rounded-3xl px-20 py-16 flex flex-col items-center gap-4">
+                <div
+                    className="fixed inset-0 z-50 bg-parchment/92 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
+                    <div
+                        className="border-2 border-dashed border-accent/60 rounded-3xl px-20 py-16 flex flex-col items-center gap-4">
                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B5732A" strokeWidth="1.5">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="17 8 12 3 7 8" />
-                            <line x1="12" y1="3" x2="12" y2="15" />
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                         <p className="font-playfair text-2xl text-accent">Drop to add to archive</p>
                     </div>
@@ -249,12 +263,13 @@ export default function HomePage() {
                     >
                         {uploading ? (
                             <>
-                                <span className="inline-block w-3.5 h-3.5 border-[2px] border-paper/30 border-t-paper rounded-full animate-spin " />
+                                <span
+                                    className="inline-block w-3.5 h-3.5 border-[2px] border-paper/30 border-t-paper rounded-full animate-spin "/>
                                 Transcribing…
                             </>
                         ) : (
                             <>
-                                <UploadIcon />
+                                <UploadIcon/>
                                 Add Document
                             </>
                         )}
@@ -279,12 +294,12 @@ export default function HomePage() {
                             <div
                                 key={i}
                                 className="h-[78px] rounded-2xl bg-paper border border-border animate-pulse"
-                                style={{ animationDelay: `${i * 0.08}s` }}
+                                style={{animationDelay: `${i * 0.08}s`}}
                             />
                         ))}
                     </div>
                 ) : documents.length === 0 ? (
-                    <EmptyState onUpload={() => fileInputRef.current?.click()} />
+                    <EmptyState onUpload={() => fileInputRef.current?.click()}/>
                 ) : (
                     <div className="animate-fade-in">
                         <p className="text-[10px] text-muted uppercase tracking-[0.18em] mb-5 font-lora">
@@ -298,7 +313,7 @@ export default function HomePage() {
                                 <div
                                     key={doc.id}
                                     className="animate-slide-up"
-                                    style={{ animationDelay: `${i * 0.04}s` }}
+                                    style={{animationDelay: `${i * 0.04}s`}}
                                 >
                                     <DocumentRow
                                         doc={doc}

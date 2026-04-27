@@ -1,7 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {GoogleGenerativeAI, SchemaType, Schema} from '@google/generative-ai';
 
-// Initialize the SDK
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
@@ -13,12 +12,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({error: "No image provided"}, {status: 400});
         }
 
-        // gemini-3.1-pro-preview
-        // gemini-3.1-flash-lite-preview
-        const model_name = "gemini-3.1-pro-preview"
-        const model = genAI.getGenerativeModel({model: model_name});
+        const model = genAI.getGenerativeModel({model: "gemini-3.1-pro-preview"});
 
-        // 1. Explicitly type the object as `Schema` to cure the TS error
         const responseSchema: Schema = {
             type: SchemaType.OBJECT,
             properties: {
@@ -28,16 +23,10 @@ export async function POST(req: NextRequest) {
                     items: {
                         type: SchemaType.OBJECT,
                         properties: {
-                            text: {
-                                type: SchemaType.STRING,
-                                description: "The transcribed text of the physical line, with abbreviations wrapped in <abbr> tags."
-                            },
+                            text: {type: SchemaType.STRING},
                             box_2d: {
                                 type: SchemaType.ARRAY,
-                                description: "The bounding box of the line on a 0-1000 scale: [ymin, xmin, ymax, xmax].",
-                                items: {
-                                    type: SchemaType.INTEGER,
-                                },
+                                items: {type: SchemaType.INTEGER},
                             },
                         },
                         required: ["text", "box_2d"],
@@ -47,32 +36,61 @@ export async function POST(req: NextRequest) {
             required: ["lines"],
         };
 
-        // 2. The Updated Philologist Prompt
+        // Removed marginalia rule, added strict focus on main text
         const prompt = `
-            You are an expert medieval philologist transcribing a medical manuscript.
-            
-            RULES:
-            1. Line by Line: Transcribe the text exactly as it appears, physical line by physical line.
-            2. Language Constraint: The text is Medieval Latin. Use ONLY valid Latin letters. ABSOLUTELY NO NUMBERS (like 3, 9) in the words.
-            3. Abbreviation Handling: Scribes used symbols that look like numbers (e.g., a "3" shape). Do not transcribe these as numbers. If you cannot confidently resolve a shorthand symbol into Latin letters, replace it with an underscore "_".
-            4. Tagging: Wrap ANY word containing a medieval abbreviation, shorthand, or placeholder underscore in <abbr> tags. Example: <abbr>quecumq_</abbr>.
-            5. Spatial Mapping: Calculate the bounding box for each line on a 0-1000 scale [ymin, xmin, ymax, xmax].
-        `;
+ACT AS: An elite Medieval Philologist specializing in 12th–14th century Latin medical scripts (Hippocratic corpus).
 
-        const imagePart = {
-            inlineData: {
-                data: base64Image,
-                mimeType: mimeType,
-            },
-        };
+STRICT TRANSCRIPTION PROTOCOL:
 
-        console.log("Feeding page to Gemini 3.1 Pro with Typed Schema...");
+0. COLUMN DETECTION:
+   - First, determine if the page contains one or multiple columns.
+   - If TWO columns are present, you MUST process the LEFT column completely before moving to the RIGHT column.
+   - NEVER read across columns line-by-line.
+
+1. LINE-BY-LINE:
+   - Within each column, process the text in strict top-to-bottom physical sequence.
+   - Do not skip lines.
+
+2. ZERO-DIGIT POLICY:
+   - Numbers (0–9) NEVER appear in Medieval Latin words.
+   - Any perceived '3', '9', '4', etc. are shorthand characters (e.g., 'con-' or '-us').
+   - Interpret them as abbreviation marks, NOT digits.
+   - Resolve them into Latin letters when reasonably clear.
+   - If uncertain, choose the most plausible expansion based on context.
+   - NEVER output digits.
+
+3. ABBREVIATIONS (CRITICAL):
+   - Medieval Latin texts make extensive use of abbreviations and ligatures.
+   - ANY word containing an abbreviation mark MUST be wrapped in <abbr> tags.
+   - This applies EVEN IF you expand the word confidently.
+   - The <abbr> tag signals that the original manuscript used shorthand.
+   - Examples: <abbr>quecumque</abbr>, <abbr>conclusio</abbr>.
+
+4. PHILOLOGICAL CONFIDENCE:
+   - Prefer grammatically and contextually correct Latin expansions over uncertainty.
+   - Use knowledge of common medieval abbreviations and medical terminology.
+   - Ensure the resulting text is linguistically coherent.
+
+5. SPATIAL ACCURACY:
+   - Provide bounding boxes as [ymin, xmin, ymax, xmax] on a 0–1000 scale.
+
+6. BODY TEXT ONLY:
+   - Ignore marginal notes, headers, page numbers, glosses, and decorations.
+
+7. GRAMMAR CHECK:
+   - Ensure Latin morphology is plausible (e.g., -em, -is, -ibus endings).
+
+8. OUTPUT ORDER:
+   - Output MUST follow physical reading order:
+     (LEFT COLUMN top→bottom) → (RIGHT COLUMN top→bottom).
+`;
+        const imagePart = {inlineData: {data: base64Image, mimeType}};
 
         const result = await model.generateContent({
             contents: [{role: "user", parts: [{text: prompt}, imagePart]}],
             generationConfig: {
                 responseMimeType: "application/json",
-                responseSchema: responseSchema, // TypeScript is now happy
+                responseSchema: responseSchema,
             },
         });
 
