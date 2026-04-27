@@ -63,91 +63,125 @@ function ChevronDownIcon({className = ""}: { className?: string }) {
 }
 
 // ─── Sentence Row (Memoized to prevent flickering on DB Save) ─────────────────
-const SentenceRow = memo(({
-                              text, idx, isActive, onSave, onDelete, onHover, onZoomRequest
-                          }: {
-    text: string; idx: number; isActive: boolean; onSave: (val: string) => void; onDelete: () => void;
-    onHover: (active: boolean) => void; onZoomRequest: () => void;
-}) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [draft, setDraft] = useState(text);
-    const inputRef = useRef<HTMLInputElement>(null);
+const SentenceRow = memo(
+    React.forwardRef<
+        HTMLDivElement,
+        {
+            text: string;
+            idx: number;
+            isActive: boolean;
+            onSave: (val: string) => void;
+            onDelete: () => void;
+            onHover: (active: boolean) => void;
+            onZoomRequest: () => void;
+        }
+    >(({text, idx, isActive, onSave, onDelete, onHover, onZoomRequest}, ref) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [draft, setDraft] = useState(text);
+        const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (isEditing) inputRef.current?.focus();
-    }, [isEditing]);
+        useEffect(() => {
+            if (isEditing) inputRef.current?.focus();
+        }, [isEditing]);
 
-    const handleCommit = (e?: React.MouseEvent | React.KeyboardEvent) => {
-        e?.stopPropagation();
-        onSave(draft);
-        setIsEditing(false);
-    };
+        const handleCommit = (e?: React.MouseEvent | React.KeyboardEvent) => {
+            e?.stopPropagation();
+            onSave(draft);
+            setIsEditing(false);
+        };
 
-    const handleCancel = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setDraft(text);
-        setIsEditing(false);
-    };
+        const handleCancel = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            setDraft(text);
+            setIsEditing(false);
+        };
 
-    const highlightAbbr = (val: string) => {
-        const parts = val.split(/(<abbr>.*?<\/abbr>)/g);
-        return parts.map((part, i) => {
-            if (part.startsWith('<abbr>') && part.endsWith('</abbr>')) {
-                const inner = part.replace(/<\/?abbr>/g, '');
-                return <span key={i}
-                             className="bg-accent/15 text-accent-dark px-1 rounded border-b border-accent/40 font-semibold">{inner}</span>;
-            }
-            return <span key={i}>{part}</span>;
-        });
-    };
+        const highlightAbbr = (val: string) => {
+            const parts = val.split(/(<abbr>.*?<\/abbr>)/g);
+            return parts.map((part, i) => {
+                if (part.startsWith('<abbr>') && part.endsWith('</abbr>')) {
+                    const inner = part.replace(/<\/?abbr>/g, '');
+                    return (
+                        <span
+                            key={i}
+                            className="bg-accent/15 text-accent-dark px-1 rounded border-b border-accent/40 font-semibold"
+                        >
+                            {inner}
+                        </span>
+                    );
+                }
+                return <span key={i}>{part}</span>;
+            });
+        };
 
-    return (
-        <div
-            className={`group flex items-start gap-3 py-2.5 px-4 border-b border-border/20 transition-all cursor-pointer ${isActive ? 'bg-accent/10 border-l-4 border-accent' : 'border-l-4 border-transparent hover:bg-black/[0.02]'}`}
-            onMouseEnter={() => onHover(true)}
-            onMouseLeave={() => onHover(false)}
-            onClick={() => !isEditing && onZoomRequest()}
-        >
-            <span className="w-5 text-[9px] text-muted/40 font-mono mt-1.5">{idx + 1}</span>
-            {isEditing ? (
-                <div className="flex-1 flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <input
-                        ref={inputRef}
-                        className="flex-1 bg-white border border-accent/50 rounded px-2 py-1 text-sm font-lora outline-none shadow-sm"
-                        value={draft}
-                        onChange={e => setDraft(e.target.value)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter') handleCommit(e);
-                            if (e.key === 'Escape') setIsEditing(false);
-                        }}
-                    />
-                    <button onClick={handleCommit}
-                            className="p-1.5 bg-accent text-white rounded hover:bg-accent-dark shadow-sm transition-colors">
-                        <CheckIcon/></button>
-                    <button onClick={handleCancel}
-                            className="p-1.5 bg-white border border-border text-muted rounded hover:text-ink shadow-sm transition-colors">
-                        <XIcon/></button>
-                </div>
-            ) : (
-                <div className="flex-1 flex items-start justify-between gap-4">
-                    <p className="text-[14px] font-lora text-ink leading-relaxed">{highlightAbbr(text)}</p>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                        <button onClick={(e) => {
-                            e.stopPropagation();
-                            setIsEditing(true);
-                        }} className="p-1 text-muted hover:text-accent">
-                            <PencilIcon/></button>
-                        <button onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm("Delete this line?")) onDelete();
-                        }} className="p-1 text-muted hover:text-red-500">
-                            <TrashIcon/></button>
+        return (
+            <div
+                ref={ref}
+                className={`group flex items-start gap-3 py-2.5 px-4 border-b border-border/20 transition-all cursor-pointer ${
+                    isActive
+                        ? 'bg-accent/10 border-l-4 border-accent'
+                        : 'border-l-4 border-transparent hover:bg-black/[0.02]'
+                }`}
+                onMouseEnter={() => onHover(true)}
+                onMouseLeave={() => onHover(false)}
+                onClick={() => !isEditing && onZoomRequest()}
+            >
+                <span className="w-5 text-[9px] text-muted/40 font-mono mt-1.5">{idx + 1}</span>
+                {isEditing ? (
+                    <div className="flex-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            ref={inputRef}
+                            className="flex-1 bg-white border border-accent/50 rounded px-2 py-1 text-sm font-lora outline-none shadow-sm"
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleCommit(e);
+                                if (e.key === 'Escape') setIsEditing(false);
+                            }}
+                        />
+                        <button
+                            onClick={handleCommit}
+                            className="p-1.5 bg-accent text-white rounded hover:bg-accent-dark shadow-sm transition-colors"
+                        >
+                            <CheckIcon/>
+                        </button>
+                        <button
+                            onClick={handleCancel}
+                            className="p-1.5 bg-white border border-border text-muted rounded hover:text-ink shadow-sm transition-colors"
+                        >
+                            <XIcon/>
+                        </button>
                     </div>
-                </div>
-            )}
-        </div>
-    );
-});
+                ) : (
+                    <div className="flex-1 flex items-start justify-between gap-4">
+                        <p className="text-[14px] font-lora text-ink leading-relaxed">{highlightAbbr(text)}</p>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsEditing(true);
+                                }}
+                                className="p-1 text-muted hover:text-accent"
+                            >
+                                <PencilIcon/>
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm('Delete this line?')) onDelete();
+                                }}
+                                className="p-1 text-muted hover:text-red-500"
+                            >
+                                <TrashIcon/>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    })
+);
+
 SentenceRow.displayName = 'SentenceRow';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -173,6 +207,7 @@ export default function DocumentViewer() {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [pdfDocProxy, setPdfDocProxy] = useState<any>(null);
+    const sentenceRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
     useEffect(() => {
         if (doc?.data) {
@@ -181,6 +216,20 @@ export default function DocumentViewer() {
             return () => URL.revokeObjectURL(url);
         }
     }, [doc?.data]);
+
+    useEffect(() => {
+        if (hoveredContext) {
+            const key = `${hoveredContext.pIdx}-${hoveredContext.lIdx}`;
+            const target = sentenceRefs.current[key];
+
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest', // Prevents the whole page from jumping unnecessarily
+                });
+            }
+        }
+    }, [hoveredContext]);
 
     useEffect(() => {
         const el = containerRef.current;
@@ -282,14 +331,21 @@ export default function DocumentViewer() {
                 canvas.height = viewport.height;
 
                 // Pre-processing: Sharp contrast helps the AI see faded ink
-                if (ctx) ctx.filter = 'grayscale(100%) contrast(150%)';
-
                 await page.render({canvasContext: ctx, viewport}).promise;
 
-                // --- THE CLEVER PAYLOAD MATH ---
-                // Switch to JPEG with 95% quality.
-                // This preserves text sharpness but reduces the payload size from ~15MB to ~2MB.
-                const base64Data = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+                const filteredCanvas = document.createElement('canvas');
+                const fctx = filteredCanvas.getContext('2d');
+
+                filteredCanvas.width = canvas.width;
+                filteredCanvas.height = canvas.height;
+
+                if (fctx) {
+                    fctx.filter = 'grayscale(100%) contrast(150%)';
+                    fctx.drawImage(canvas, 0, 0);
+                }
+
+                const base64Data = filteredCanvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+
 
                 const res = await fetch('/api/transcribe', {
                     method: 'POST',
@@ -447,6 +503,9 @@ export default function DocumentViewer() {
                                             <div className="flex-1 overflow-y-auto custom-scrollbar">
                                                 {lines.map((line, idx) => (
                                                     <SentenceRow
+                                                        ref={(el) => {
+                                                            sentenceRefs.current[`${i}-${idx}`] = el;
+                                                        }}
                                                         key={line.id ?? `${i}-${idx}`}
                                                         text={line.text}
                                                         idx={idx}

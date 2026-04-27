@@ -38,52 +38,48 @@ export async function POST(req: NextRequest) {
 
         // Removed marginalia rule, added strict focus on main text
         const prompt = `
-ACT AS: An elite Medieval Philologist specializing in 12th–14th century Latin medical scripts (Hippocratic corpus).
+        ACT AS: An elite Medieval Philologist specializing in 12th–14th century Latin medical scripts (Hippocratic corpus).
 
 STRICT TRANSCRIPTION PROTOCOL:
 
-0. COLUMN DETECTION:
-   - First, determine if the page contains one or multiple columns.
-   - If TWO columns are present, you MUST process the LEFT column completely before moving to the RIGHT column.
-   - NEVER read across columns line-by-line.
+0. COLUMN DETECTION & READING PATH:
+   - Identify if the page is single or multi-column.
+   - You MUST follow a strict linear horizontal-then-vertical path within the logical text block.
+   - If TWO columns are present: Transcribe the entirety of the LEFT column line-by-line (top to bottom), then the entirety of the RIGHT column line-by-line (top to bottom).
+   - NEVER bridge the gap between columns in a single line entry.
 
-1. LINE-BY-LINE:
-   - Within each column, process the text in strict top-to-bottom physical sequence.
-   - Do not skip lines.
+1. LINE-BY-LINE INTEGRITY:
+   - Process the text in strict line-by-line sequence. 
+   - A "line" is defined by its horizontal baseline.
+   - Capture every word on a single line from left-to-right before proceeding to the line immediately below it.
 
 2. ZERO-DIGIT POLICY:
    - Numbers (0–9) NEVER appear in Medieval Latin words.
-   - Any perceived '3', '9', '4', etc. are shorthand characters (e.g., 'con-' or '-us').
-   - Interpret them as abbreviation marks, NOT digits.
-   - Resolve them into Latin letters when reasonably clear.
-   - If uncertain, choose the most plausible expansion based on context.
-   - NEVER output digits.
+   - Any perceived '3', '9', '4', etc. are shorthand characters (e.g., 'con-', '-us', or '-rum').
+   - Interpret them as abbreviation marks, NOT digits. Resolve them into Latin letters.
+   - NEVER output digits in the transcription.
 
 3. ABBREVIATIONS (CRITICAL):
-   - Medieval Latin texts make extensive use of abbreviations and ligatures.
-   - ANY word containing an abbreviation mark MUST be wrapped in <abbr> tags.
-   - This applies EVEN IF you expand the word confidently.
-   - The <abbr> tag signals that the original manuscript used shorthand.
-   - Examples: <abbr>quecumque</abbr>, <abbr>conclusio</abbr>.
+   - ANY word that was shortened or used a ligature in the manuscript MUST be wrapped in <abbr> tags.
+   - The tag signals that the original scribe used shorthand, even if your expansion is 100% certain.
+   - Examples: <abbr>quecumque</abbr>, <abbr>conclusio</abbr>, <abbr>dominus</abbr>.
 
 4. PHILOLOGICAL CONFIDENCE:
-   - Prefer grammatically and contextually correct Latin expansions over uncertainty.
-   - Use knowledge of common medieval abbreviations and medical terminology.
-   - Ensure the resulting text is linguistically coherent.
+   - Prioritize grammatically and contextually correct Latin (proper case endings: -em, -is, -ibus) over literal "character-by-character" guessing.
+   - Use your expertise in medieval medical terminology to ensure the text is linguistically coherent.
 
 5. SPATIAL ACCURACY:
-   - Provide bounding boxes as [ymin, xmin, ymax, xmax] on a 0–1000 scale.
+   - Provide bounding boxes for each line as [ymin, xmin, ymax, xmax] on a 0–1000 scale.
+   - Ensure the box encompasses the entire line of text within that column.
 
-6. BODY TEXT ONLY:
-   - Ignore marginal notes, headers, page numbers, glosses, and decorations.
+6. NOISE FILTERING:
+   - Ignore marginalia, headers, folio numbers, and decorative illuminations. 
+   - Focus exclusively on the main body of the medical treatise.
 
-7. GRAMMAR CHECK:
-   - Ensure Latin morphology is plausible (e.g., -em, -is, -ibus endings).
-
-8. OUTPUT ORDER:
-   - Output MUST follow physical reading order:
-     (LEFT COLUMN top→bottom) → (RIGHT COLUMN top→bottom).
-`;
+7. OUTPUT FORMAT:
+   - Provide a JSON list of lines where each object contains: {"text": "...", "box_2d": [ymin, xmin, ymax, xmax]}.
+   - The order of the list must reflect the physical reading order (Column 1: Line 1, 2, 3... then Column 2: Line 1, 2, 3...).
+`
         const imagePart = {inlineData: {data: base64Image, mimeType}};
 
         const result = await model.generateContent({
