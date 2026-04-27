@@ -4,7 +4,6 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRouter } from 'next/navigation';
 import { db, AppDocument } from '@/lib/db';
-import { transcribe } from '@/lib/transcribe';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -162,7 +161,7 @@ export default function HomePage() {
         setUploading(true);
         try {
             for (const file of pdfs) {
-                const transcriptions = await transcribe(file);
+                const transcriptions = ["very solid transcription"];
                 await db.documents.add({
                     name: file.name,
                     data: file,
@@ -195,6 +194,19 @@ export default function HomePage() {
         },
         [handleFiles]
     );
+
+    const onStartMapping = async () => {
+        const allDocuments = await db.documents.toArray();
+        for (let i = 0; i < allDocuments.length-1; i++) {
+            for (let j = i+1; j < allDocuments.length; j++) {
+                const res = await fetch('/api/mapTwoDocuments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc1: allDocuments[i], doc2: allDocuments[j] })
+                });
+            }
+        }
+    }
 
     return (
         <div
@@ -278,7 +290,10 @@ export default function HomePage() {
                         <p className="text-[10px] text-muted uppercase tracking-[0.18em] mb-5 font-lora">
                             {documents.length} {documents.length === 1 ? 'document' : 'documents'} in archive
                         </p>
-                        <ul className="space-y-2.5">
+                        <button onClick={onStartMapping} type="button" className="text-white bg-red-700 hover:bg-red-900 shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 cursor-pointer">
+                            Begin mapping
+                        </button>
+                        <ul className="space-y-2.5 py-4">
                             {documents.map((doc, i) => (
                                 <div
                                     key={doc.id}
