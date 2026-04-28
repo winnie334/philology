@@ -1,49 +1,51 @@
 'use client';
 
-import React, {useEffect, useState, useMemo} from 'react';
-import {useParams} from 'next/navigation';
-import {useLiveQuery} from 'dexie-react-hooks';
-import {pdfjs} from 'react-pdf';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams } from 'next/navigation';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { pdfjs } from 'react-pdf';
 
-import {AppDocument, AppMapping, db} from '@/lib/db';
-import {useDocumentStore} from '@/app/store/useDocumentStore';
-import {useTranscription} from '@/app/hooks/useTranscription';
-import {findNearestMappedLine, localToGlobal, globalToLocal} from './lib/lineUtils';
+import { AppDocument, AppMapping, db } from '@/lib/db';
+import { useDocumentStore } from '@/app/store/useDocumentStore';
+import { useTranscription } from '@/app/hooks/useTranscription';
+import { findNearestMappedLine, localToGlobal, globalToLocal } from './lib/lineUtils';
 
 import MappingSelector from './components/MappingSelector';
 import Header from "@/app/documents/[id]/components/Header";
-import DocumentPanel from "@/app/documents/[id]/components/DocumentPanel"; // The new unified component
+import DocumentPanel from "@/app/documents/[id]/components/DocumentPanel";
 
 if (typeof window !== 'undefined') {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 }
 
 export default function DocumentViewer() {
-    const {id} = useParams();
+    const { id } = useParams();
     const docId = parseInt(id as string, 10);
 
     const {
         mainDoc, setMainDoc,
         sideDoc, openSidePanel, closeSidePanel,
-
         mainHover, setMainHover,
         sideHover, setSideHover,
-
         mappingPopover, setMappingPopover,
         sidePanelScrollTarget, setSidePanelScrollTarget,
-        activeMapping
+        activeMapping,
+        resetStore // Wipes state when user leaves page
     } = useDocumentStore();
 
     const [pdfDocProxy, setPdfDocProxy] = useState<any>(null);
-    const [pdfWidth, setPdfWidth] = useState(550);
     const [mainPdfUrl, setMainPdfUrl] = useState<string | null>(null);
     const [sidePdfUrl, setSidePdfUrl] = useState<string | null>(null);
 
-    // We add a scroll target for the main panel specifically
     const [mainPanelScrollTarget, setMainPanelScrollTarget] = useState<number | null>(null);
 
     const allMappings = useLiveQuery(() => db.mappings.toArray(), []);
     const allDocuments = useLiveQuery(() => db.documents.toArray(), []);
+
+    // ── Clear state on unmount ──
+    useEffect(() => {
+        return () => { resetStore(); };
+    }, [resetStore]);
 
     // ── Initial Document Loads ──
     useEffect(() => {
@@ -53,9 +55,7 @@ export default function DocumentViewer() {
             if (isMounted && data) setMainDoc(data as AppDocument);
         };
         loadInitialDoc();
-        return () => {
-            isMounted = false;
-        };
+        return () => { isMounted = false; };
     }, [docId, setMainDoc]);
 
     useEffect(() => {
@@ -73,11 +73,11 @@ export default function DocumentViewer() {
     }, [sideDoc?.data]);
 
     // ── Hooks ──
-    const {runTranscription, isProcessing, transcribingPageIndex} = useTranscription(
+    const { runTranscription, isProcessing, transcribingPageIndex } = useTranscription(
         pdfDocProxy,
         docId,
         (newTranscriptions) => {
-            if (mainDoc) setMainDoc({...mainDoc, transcriptions: newTranscriptions});
+            if (mainDoc) setMainDoc({ ...mainDoc, transcriptions: newTranscriptions });
         }
     );
 
@@ -135,8 +135,9 @@ export default function DocumentViewer() {
         );
     }
 
-    // Shrink the PDFs down slightly when both panels are open so they comfortably fit the 50/50 split
-    const currentPdfWidth = sideDoc ? pdfWidth * 0.8 : pdfWidth;
+    // Give distinct widths so the side panel behaves cleanly without getting blurry
+    const mainPdfWidth = sideDoc ? 450 : 550;
+    const sidePdfWidth = 280;
 
     return (
         <div className="h-screen flex flex-col bg-[#F8F7F4] overflow-hidden font-lora">
@@ -154,7 +155,7 @@ export default function DocumentViewer() {
                     <DocumentPanel
                         doc={mainDoc}
                         pdfUrl={mainPdfUrl}
-                        pdfWidth={currentPdfWidth}
+                        pdfWidth={mainPdfWidth}
                         localHover={mainHover}
                         setLocalHover={setMainHover}
                         externalHighlight={mainExternalHighlight}
@@ -164,18 +165,18 @@ export default function DocumentViewer() {
                         onScrollTargetConsumed={() => setMainPanelScrollTarget(null)}
                         onMapRequest={(pIdx, lIdx, rect) => {
                             const globalLineIdx = localToGlobal(mainDoc.transcriptions, pIdx, lIdx);
-                            setMappingPopover({globalLineIdx, rect});
+                            setMappingPopover({ globalLineIdx, rect });
                         }}
                     />
                 </main>
 
                 {sideDoc && (
-                    <aside className="w-1/2 flex transition-all duration-300 ease-in-out">
+                    <aside className="w-1/2 flex transition-all duration-300 ease-in-out border-l border-border/50 shadow-2xl">
                         <DocumentPanel
                             isSidePanel
                             doc={sideDoc}
                             pdfUrl={sidePdfUrl}
-                            pdfWidth={currentPdfWidth}
+                            pdfWidth={sidePdfWidth}
                             localHover={sideHover}
                             setLocalHover={setSideHover}
                             externalHighlight={sideExternalHighlight}
@@ -200,15 +201,8 @@ export default function DocumentViewer() {
             )}
 
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 5px;
-                    height: 5px;
-                }
-
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #e5e5e1;
-                    border-radius: 10px;
-                }
+                .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e1; border-radius: 10px; }
             `}</style>
         </div>
     );

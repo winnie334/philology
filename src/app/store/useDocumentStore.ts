@@ -14,6 +14,7 @@ interface DocumentState {
     setZoom: (config: any) => void;
     openSidePanel: (doc: AppDocument, mapping: AppMapping) => void;
     closeSidePanel: () => void;
+    resetStore: () => void; // <--- ADD THIS
 
     // Data Actions
     updateTranscription: (id: number, pIdx: number, lIdx: number, text: string) => Promise<void>;
@@ -44,6 +45,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     openSidePanel: (doc, mapping) => set({ sideDoc: doc, activeMapping: mapping }),
     closeSidePanel: () => set({ sideDoc: null, activeMapping: null, sideHover: null }),
 
+    // WIPES THE STATE CLEAN WHEN LEAVING THE PAGE
+    resetStore: () => set({
+        mainDoc: null, sideDoc: null, activeMapping: null,
+        mainHover: null, sideHover: null, zoomConfig: null,
+        sidePanelScrollTarget: null, mappingPopover: null
+    }),
+
     updateTranscription: async (id, pIdx, lIdx, text) => {
         const doc = await db.documents.get(id);
         if (!doc) return;
@@ -54,12 +62,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             lines[lIdx].text = text;
             trans[pIdx] = JSON.stringify(lines);
 
-            // 1. Optimistic UI Update (Check both main and side docs)
             const { mainDoc, sideDoc } = get();
             if (mainDoc?.id === id) set({ mainDoc: { ...mainDoc, transcriptions: trans } });
             if (sideDoc?.id === id) set({ sideDoc: { ...sideDoc, transcriptions: trans } });
 
-            // 2. Background DB Sync
             await db.documents.update(id, { transcriptions: trans });
         }
     },
