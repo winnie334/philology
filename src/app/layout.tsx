@@ -17,7 +17,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-    title: 'Scriptorium',
+    title: 'Scriptoria',
     description: 'Philological document archive and transcription tool',
 };
 
