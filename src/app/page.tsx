@@ -7,6 +7,7 @@ import {db, AppDocument, AppMapping} from '@/lib/db';
 import {PhilologicalAnalysisResult} from "@/types/philology";
 import {PhilologyAnalyzer} from "@/components/PhilologyAnalyzer";
 import ManuscriptAnalytics from "@/components/ManuscriptNetwork";
+import IndexBuilderButton from "@/app/components/IndexBuilderButton";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -473,6 +474,7 @@ export default function HomePage() {
                         </div>
 
                         <PhilologyAnalyzer/>
+                        <IndexBuilderButton />
 
                         <div className="border-t border-border/50 pt-8">
                             <ManuscriptAnalytics/>
