@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { PencilIcon, TrashIcon, CheckIcon, XIcon, LinkIcon } from './Icons';
+import { useAbbreviations, renderWithAbbreviations } from '../lib/AbbreviationContext';
 
 interface SentenceRowProps {
     text: string;
@@ -13,7 +14,6 @@ interface SentenceRowProps {
     onSave: (val: string) => void;
     onDelete: () => void;
     onHover: (active: boolean) => void;
-    /** Fired on row click — used for zoom in main panel, scroll-other-panel in side panel */
     onZoomRequest: () => void;
     onMapRequest: (rect: DOMRect) => void;
 }
@@ -28,6 +28,8 @@ const SentenceRow = memo(
             const [isEditing, setIsEditing] = useState(false);
             const [draft, setDraft] = useState(text);
             const inputRef = useRef<HTMLInputElement>(null);
+
+            const { displayedAbbreviations } = useAbbreviations();
 
             useEffect(() => { if (isEditing) inputRef.current?.focus(); }, [isEditing]);
 
@@ -59,23 +61,43 @@ const SentenceRow = memo(
                                 className="flex-1 bg-white border border-accent/50 rounded px-2 py-1 text-sm font-lora outline-none shadow-sm"
                                 value={draft}
                                 onChange={e => setDraft(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') handleCommit(e); if (e.key === 'Escape') setIsEditing(false); }}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') handleCommit(e);
+                                    if (e.key === 'Escape') setIsEditing(false);
+                                }}
                             />
-                            <button onClick={handleCommit} className="p-1.5 bg-accent text-white rounded hover:bg-accent/80 shadow-sm transition-colors"><CheckIcon /></button>
-                            <button onClick={handleCancel} className="p-1.5 bg-white border border-border text-muted rounded hover:text-ink shadow-sm transition-colors"><XIcon /></button>
+                            <button onClick={handleCommit}
+                                    className="p-1.5 bg-accent text-white rounded hover:bg-accent/80 shadow-sm transition-colors">
+                                <CheckIcon />
+                            </button>
+                            <button onClick={handleCancel}
+                                    className="p-1.5 bg-white border border-border text-muted rounded hover:text-ink shadow-sm transition-colors">
+                                <XIcon />
+                            </button>
                         </div>
                     ) : (
                         <div className="flex-1 flex items-start justify-between gap-4">
-                            <p className="text-[14px] font-lora text-ink leading-relaxed"><span>{text}</span>;</p>
+                            <p className="text-[14px] font-lora text-ink leading-relaxed">
+                                {renderWithAbbreviations(text, displayedAbbreviations)}
+                            </p>
                             {!readOnly && (
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                     <button
                                         title="Compare in another manuscript"
-                                        onClick={e => { e.stopPropagation(); onMapRequest((e.currentTarget as HTMLElement).getBoundingClientRect()); }}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            onMapRequest((e.currentTarget as HTMLElement).getBoundingClientRect());
+                                        }}
                                         className="p-1 text-muted hover:text-accent transition-colors"
                                     ><LinkIcon /></button>
-                                    <button onClick={e => { e.stopPropagation(); setIsEditing(true); }} className="p-1 text-muted hover:text-accent transition-colors"><PencilIcon /></button>
-                                    <button onClick={e => { e.stopPropagation(); if (confirm('Delete this line?')) onDelete(); }} className="p-1 text-muted hover:text-red-500 transition-colors"><TrashIcon /></button>
+                                    <button onClick={e => { e.stopPropagation(); setIsEditing(true); }}
+                                            className="p-1 text-muted hover:text-accent transition-colors">
+                                        <PencilIcon />
+                                    </button>
+                                    <button onClick={e => { e.stopPropagation(); if (confirm('Delete this line?')) onDelete(); }}
+                                            className="p-1 text-muted hover:text-red-500 transition-colors">
+                                        <TrashIcon />
+                                    </button>
                                 </div>
                             )}
                         </div>
