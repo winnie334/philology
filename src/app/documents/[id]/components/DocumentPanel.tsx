@@ -143,7 +143,6 @@ export default function DocumentPanel({
                 </div>
             )}
 
-            {/* Tightened padding and vertical gaps between pages */}
             <div className={`flex-1 overflow-y-auto custom-scrollbar ${isSidePanel ? 'p-6' : 'p-8'} space-y-12`}>
                 <Document
                     file={pdfUrl || undefined}
@@ -151,6 +150,12 @@ export default function DocumentPanel({
                         setNumPages(pdf.numPages);
                         if (onLoadSuccess) onLoadSuccess(pdf);
                     }}
+                    loading={
+                        <div className="flex flex-col items-center justify-center h-full min-h-[50vh] animate-pulse">
+                            <div className="h-4 w-32 bg-black/5 rounded mb-4" />
+                            <span className="text-sm text-muted font-lora">Initializing...</span>
+                        </div>
+                    }
                 >
                     <div className="max-w-[1700px] mx-auto">
                         {Array.from({ length: numPages }).map((_, i) => {
@@ -161,15 +166,12 @@ export default function DocumentPanel({
                             return (
                                 <div
                                     key={i}
-                                    // 1. Reduced horizontal gap
-                                    // 2. Changed to items-center to vertically center the PDF relative to the transcription box
                                     className={`flex ${isSidePanel ? 'flex-row-reverse' : 'flex-row'} gap-8 items-center mb-12 max-h-[780px]`}
                                 >
                                     {/* ── PDF PAGE ── */}
                                     <div className="shrink-0 flex flex-col min-w-0">
                                         <span className="text-[10px] font-bold text-muted/40 mb-2 uppercase tracking-wider font-lora">Folio {i + 1}</span>
                                         <div
-                                            // Removed background white, shadow, and fixed height so it strictly hugs the PDF
                                             className="relative bg-transparent overflow-hidden rounded-md shadow-sm"
                                             style={{ width: pdfWidth }}
                                         >
@@ -177,7 +179,13 @@ export default function DocumentPanel({
                                                 className={`transition-transform duration-500 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left ${isTransforming ? 'pointer-events-none' : ''}`}
                                                 style={{ transform: isPageZoomed ? `scale(${zoomConfig.scale}) translate(${-zoomConfig.x}%, ${-zoomConfig.y}%)` : 'scale(1) translate(0,0)' }}
                                             >
-                                                <Page pageNumber={i + 1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false}  />
+                                                <Page
+                                                    pageNumber={i + 1}
+                                                    width={pdfWidth}
+                                                    devicePixelRatio={typeof window !== 'undefined' ? Math.max(window.devicePixelRatio || 1, 5) : 5}
+                                                    renderTextLayer={false}
+                                                    renderAnnotationLayer={false}
+                                                />
 
                                                 {!isBulkEditing && lines.map((line, idx) => {
                                                     if (!line.box_2d) return null;
@@ -214,7 +222,6 @@ export default function DocumentPanel({
                                     </div>
 
                                     {/* ── TRANSCRIPTION LIST ── */}
-                                    {/* Maintains the fixed 720px height scroll box */}
                                     <div className="flex-1 flex flex-col h-[720px] min-w-0">
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-[10px] font-bold text-muted/40 uppercase font-lora tracking-wider mt-5">Transcription</span>
@@ -261,7 +268,6 @@ export default function DocumentPanel({
                                                                     const isZoomingOut = zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx;
                                                                     if (line.box_2d) handleToggleZoom(i, idx, line.box_2d);
 
-                                                                    // Fix phantom highlight here too!
                                                                     if (!isZoomingOut) {
                                                                         onLineClick(i, idx);
                                                                     }
