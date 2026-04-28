@@ -136,8 +136,8 @@ export default function DocumentViewer() {
     }
 
     // Give distinct widths so the side panel behaves cleanly without getting blurry
-    const mainPdfWidth = sideDoc ? 450 : 550;
-    const sidePdfWidth = 280;
+    const mainPdfWidth = sideDoc ? 350 : 550;
+    const sidePdfWidth = sideDoc ? 350 : 550;
 
     return (
         <div className="h-screen flex flex-col bg-[#F8F7F4] overflow-hidden font-lora">

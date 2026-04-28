@@ -82,6 +82,7 @@ export default function DocumentPanel({
     const [zoomConfig, setZoomConfig] = useState<{ pIdx: number, lIdx: number, x: number, y: number, scale: number } | null>(null);
     const [isTransforming, setIsTransforming] = useState(false);
     const [bulkEditingPage, setBulkEditingPage] = useState<number | null>(null);
+    const [flashTarget, setFlashTarget] = useState<{ pIdx: number; lIdx: number } | null>(null);
 
     const sentenceRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -101,19 +102,18 @@ export default function DocumentPanel({
             const el = sentenceRefs.current[`${target.pIdx}-${target.lIdx}`];
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setLocalHover(target);
-                setTimeout(() => setLocalHover(null), 1500);
+                setFlashTarget(target);
+                setTimeout(() => setFlashTarget(null), 1500);
             }
             if (onScrollTargetConsumed) onScrollTargetConsumed();
         }
-    }, [scrollTargetGlobal, numPages, doc.transcriptions, onScrollTargetConsumed, setLocalHover]);
+    }, [scrollTargetGlobal, numPages, doc.transcriptions, onScrollTargetConsumed]);
 
     const handleToggleZoom = (pIdx: number, lIdx: number, box: number[]) => {
         if (zoomConfig?.pIdx === pIdx && zoomConfig?.lIdx === lIdx) {
             setZoomConfig(null);
             return;
         }
-
         setIsTransforming(true);
         const boxW = (box[3] - box[1]) / 10;
         const boxH = (box[2] - box[0]) / 10;
@@ -126,22 +126,11 @@ export default function DocumentPanel({
             y: ((box[0] + box[2]) / 20) - 30 / scale,
             scale
         });
-
         setTimeout(() => setIsTransforming(false), 500);
     };
 
-    // ─── Dynamic Layout Calculations ───
-    const containerPadding = isSidePanel ? 'p-6 space-y-16' : 'p-10 space-y-24';
-    const rowDirection = isSidePanel ? 'flex-row-reverse' : 'flex-row';
-    const gapClass = isSidePanel ? 'gap-6' : 'gap-12';
-
-    // Keep PDF ratio intact to prevent blurriness
-    const calculatedPdfHeight = isSidePanel ? Math.floor(pdfWidth * 1.414) : 720;
-    const transHeightClass = isSidePanel ? '' : 'h-[720px] mt-6';
-
     return (
         <div className={`flex-1 flex flex-col overflow-hidden ${isSidePanel ? 'bg-[#F3F1EC] border-l shadow-2xl z-10' : 'bg-[#F8F7F4] border-r'}`}>
-
             {isSidePanel && (
                 <div className="shrink-0 sticky top-0 z-20 bg-[#F3F1EC]/95 backdrop-blur-md border-b border-border/40 px-5 py-3 flex items-center justify-between">
                     <div className="flex flex-col">
@@ -154,46 +143,45 @@ export default function DocumentPanel({
                 </div>
             )}
 
-            <div className={`flex-1 overflow-y-auto custom-scrollbar ${containerPadding}`}>
+            {/* Tightened padding and vertical gaps between pages */}
+            <div className={`flex-1 overflow-y-auto custom-scrollbar ${isSidePanel ? 'p-6' : 'p-8'} space-y-12`}>
                 <Document
                     file={pdfUrl || undefined}
                     onLoadSuccess={(pdf) => {
                         setNumPages(pdf.numPages);
                         if (onLoadSuccess) onLoadSuccess(pdf);
                     }}
-                    loading={
-                        <div className="flex flex-col items-center justify-center h-full min-h-[50vh] animate-pulse">
-                            <div className="h-4 w-32 bg-black/5 rounded mb-4" />
-                            <span className="text-sm text-muted font-lora">Initializing...</span>
-                        </div>
-                    }
                 >
                     <div className="max-w-[1700px] mx-auto">
                         {Array.from({ length: numPages }).map((_, i) => {
                             const lines = parseLines(doc.transcriptions?.[i]);
                             const isPageZoomed = zoomConfig?.pIdx === i;
                             const isBulkEditing = bulkEditingPage === i;
-                            const isPageExtHighlighted = externalHighlight?.pIdx === i;
 
                             return (
-                                <div key={i} className={`flex ${rowDirection} ${gapClass} items-start ${isSidePanel ? 'mb-12' : 'h-[780px] mb-24'}`}>
-
+                                <div
+                                    key={i}
+                                    // 1. Reduced horizontal gap
+                                    // 2. Changed to items-center to vertically center the PDF relative to the transcription box
+                                    className={`flex ${isSidePanel ? 'flex-row-reverse' : 'flex-row'} gap-8 items-center mb-12 max-h-[780px]`}
+                                >
                                     {/* ── PDF PAGE ── */}
                                     <div className="shrink-0 flex flex-col min-w-0">
                                         <span className="text-[10px] font-bold text-muted/40 mb-2 uppercase tracking-wider font-lora">Folio {i + 1}</span>
                                         <div
-                                            className="relative bg-white rounded-xl shadow-2xl border border-border/20 overflow-hidden"
-                                            style={{ width: pdfWidth, height: calculatedPdfHeight }}
+                                            // Removed background white, shadow, and fixed height so it strictly hugs the PDF
+                                            className="relative bg-transparent overflow-hidden rounded-md shadow-sm"
+                                            style={{ width: pdfWidth }}
                                         >
                                             <div
                                                 className={`transition-transform duration-500 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left ${isTransforming ? 'pointer-events-none' : ''}`}
                                                 style={{ transform: isPageZoomed ? `scale(${zoomConfig.scale}) translate(${-zoomConfig.x}%, ${-zoomConfig.y}%)` : 'scale(1) translate(0,0)' }}
                                             >
-                                                <Page pageNumber={i + 1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false} />
+                                                <Page pageNumber={i + 1} width={pdfWidth} renderTextLayer={false} renderAnnotationLayer={false}  />
 
                                                 {!isBulkEditing && lines.map((line, idx) => {
                                                     if (!line.box_2d) return null;
-                                                    const isActive = (localHover?.pIdx === i && localHover?.lIdx === idx) || (zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx);
+                                                    const isActive = (localHover?.pIdx === i && localHover?.lIdx === idx) || (zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx) || (flashTarget?.pIdx === i && flashTarget?.lIdx === idx);
                                                     const isExt = externalHighlight?.pIdx === i && externalHighlight?.lIdx === idx;
 
                                                     return (
@@ -203,8 +191,13 @@ export default function DocumentPanel({
                                                             onMouseLeave={() => setLocalHover(null)}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
+                                                                const isZoomingOut = zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx;
                                                                 handleToggleZoom(i, idx, line.box_2d!);
-                                                                onLineClick(i, idx);
+
+                                                                // Prevent phantom highlight logic if we are just closing the zoom
+                                                                if (!isZoomingOut) {
+                                                                    onLineClick(i, idx);
+                                                                }
                                                             }}
                                                             className={`absolute cursor-pointer transition-all duration-150 ${isActive ? 'bg-accent/15 ring-2 ring-accent/60 z-10' : isExt ? 'bg-amber-300/25 ring-2 ring-amber-500/70 z-10' : ''}`}
                                                             style={{ top: `${line.box_2d[0] / 10}%`, left: `${line.box_2d[1] / 10}%`, height: `${(line.box_2d[2] - line.box_2d[0]) / 10}%`, width: `${(line.box_2d[3] - line.box_2d[1]) / 10}%` }}
@@ -221,14 +214,12 @@ export default function DocumentPanel({
                                     </div>
 
                                     {/* ── TRANSCRIPTION LIST ── */}
-                                    <div
-                                        className={`flex-1 flex flex-col ${transHeightClass} min-w-0`}
-                                        style={isSidePanel ? { height: calculatedPdfHeight + 24 } : {}}
-                                    >
+                                    {/* Maintains the fixed 720px height scroll box */}
+                                    <div className="flex-1 flex flex-col h-[720px] min-w-0">
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] font-bold text-muted/40 uppercase font-lora tracking-wider">Transcription</span>
+                                            <span className="text-[10px] font-bold text-muted/40 uppercase font-lora tracking-wider mt-5">Transcription</span>
                                             {!isBulkEditing && lines.length > 0 && (
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-4 mt-5">
                                                     <button onClick={() => setBulkEditingPage(i)} className="text-[10px] text-muted hover:text-accent font-bold flex items-center gap-1 transition-colors font-lora">
                                                         <PencilIcon /> EDIT
                                                     </button>
@@ -239,17 +230,20 @@ export default function DocumentPanel({
                                             )}
                                         </div>
 
-                                        <div className={`bg-white rounded-xl border shadow-sm flex flex-col flex-1 overflow-hidden transition-all ${isSidePanel && isPageExtHighlighted ? 'border-amber-300 shadow-md' : 'border-border/30'}`}>
+                                        <div className="bg-white rounded-xl border border-border/30 shadow-sm flex flex-col flex-1 overflow-hidden">
                                             {isBulkEditing ? (
                                                 <BulkEditor
                                                     lines={lines}
                                                     onCancel={() => setBulkEditingPage(null)}
-                                                    onSave={(newLines: any[]) => { if(doc.id !== undefined) updatePageTranscriptions(doc.id, i, newLines); setBulkEditingPage(null); }}
+                                                    onSave={(newLines: any[]) => {
+                                                        if (doc.id !== undefined) updatePageTranscriptions(doc.id, i, newLines);
+                                                        setBulkEditingPage(null);
+                                                    }}
                                                 />
                                             ) : (
                                                 <div className="flex-1 overflow-y-auto custom-scrollbar">
                                                     {lines.map((line, idx) => {
-                                                        const isActive = (localHover?.pIdx === i && localHover?.lIdx === idx) || (zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx);
+                                                        const isActive = (localHover?.pIdx === i && localHover?.lIdx === idx) || (zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx) || (flashTarget?.pIdx === i && flashTarget?.lIdx === idx);
                                                         const isExt = externalHighlight?.pIdx === i && externalHighlight?.lIdx === idx;
 
                                                         return (
@@ -264,8 +258,13 @@ export default function DocumentPanel({
                                                                 onSave={(val) => doc.id !== undefined && updateTranscription(doc.id, i, idx, val)}
                                                                 onDelete={() => doc.id !== undefined && deleteTranscriptionLine(doc.id, i, idx)}
                                                                 onZoomRequest={() => {
+                                                                    const isZoomingOut = zoomConfig?.pIdx === i && zoomConfig?.lIdx === idx;
                                                                     if (line.box_2d) handleToggleZoom(i, idx, line.box_2d);
-                                                                    onLineClick(i, idx);
+
+                                                                    // Fix phantom highlight here too!
+                                                                    if (!isZoomingOut) {
+                                                                        onLineClick(i, idx);
+                                                                    }
                                                                 }}
                                                                 onMapRequest={(rect) => {
                                                                     if (onMapRequest) onMapRequest(i, idx, rect);
@@ -277,7 +276,6 @@ export default function DocumentPanel({
                                             )}
                                         </div>
                                     </div>
-
                                 </div>
                             );
                         })}
