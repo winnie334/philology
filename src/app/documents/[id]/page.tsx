@@ -11,14 +11,18 @@ import { useTranscription } from '@/app/hooks/useTranscription';
 import { findNearestMappedLine, localToGlobal, globalToLocal } from './lib/lineUtils';
 
 import MappingSelector from './components/MappingSelector';
-import Header from "@/app/documents/[id]/components/Header";
-import DocumentPanel from "@/app/documents/[id]/components/DocumentPanel";
+import Header from '@/app/documents/[id]/components/Header';
+import DocumentPanel from '@/app/documents/[id]/components/DocumentPanel';
+import AbbreviationPanel from '@/app/documents/[id]/components/AbbreviationPanel';
+import { AbbreviationProvider } from '@/app/documents/[id]/lib/AbbreviationContext';
 
 if (typeof window !== 'undefined') {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 }
 
-export default function DocumentViewer() {
+// ─── Inner viewer (needs to be inside the provider) ───────────────────────────
+
+function DocumentViewerInner() {
     const { id } = useParams();
     const docId = parseInt(id as string, 10);
 
@@ -30,31 +34,26 @@ export default function DocumentViewer() {
         mappingPopover, setMappingPopover,
         sidePanelScrollTarget, setSidePanelScrollTarget,
         activeMapping,
-        resetStore // Wipes state when user leaves page
+        resetStore,
     } = useDocumentStore();
 
     const [pdfDocProxy, setPdfDocProxy] = useState<any>(null);
     const [mainPdfUrl, setMainPdfUrl] = useState<string | null>(null);
     const [sidePdfUrl, setSidePdfUrl] = useState<string | null>(null);
-
     const [mainPanelScrollTarget, setMainPanelScrollTarget] = useState<number | null>(null);
 
     const allMappings = useLiveQuery(() => db.mappings.toArray(), []);
     const allDocuments = useLiveQuery(() => db.documents.toArray(), []);
 
     // ── Clear state on unmount ──
-    useEffect(() => {
-        return () => { resetStore(); };
-    }, [resetStore]);
+    useEffect(() => { return () => { resetStore(); }; }, [resetStore]);
 
-    // ── Initial Document Loads ──
+    // ── Load documents ──
     useEffect(() => {
         let isMounted = true;
-        const loadInitialDoc = async () => {
-            const data = await db.documents.get(docId);
+        db.documents.get(docId).then(data => {
             if (isMounted && data) setMainDoc(data as AppDocument);
-        };
-        loadInitialDoc();
+        });
         return () => { isMounted = false; };
     }, [docId, setMainDoc]);
 
@@ -76,12 +75,12 @@ export default function DocumentViewer() {
     const { runTranscription, isProcessing, transcribingPageIndex } = useTranscription(
         pdfDocProxy,
         docId,
-        (newTranscriptions) => {
+        newTranscriptions => {
             if (mainDoc) setMainDoc({ ...mainDoc, transcriptions: newTranscriptions });
         }
     );
 
-    // ── Computed Highlights ──
+    // ── Computed highlights ──
     const sideExternalHighlight = useMemo(() => {
         if (!mainDoc || !mainHover || !activeMapping || !sideDoc) return null;
         const map = (activeMapping.docAId === mainDoc.id) ? activeMapping.mapAtoB : activeMapping.mapBtoA;
@@ -96,7 +95,7 @@ export default function DocumentViewer() {
         return globalToLocal(mainDoc.transcriptions, findNearestMappedLine(map, globalLine));
     }, [mainDoc, sideHover, activeMapping, sideDoc]);
 
-    // ── Click Handlers ──
+    // ── Click handlers ──
     const handleMainLineClick = (pIdx: number, lIdx: number) => {
         if (!sideDoc || !activeMapping || !mainDoc) return;
         const map = (activeMapping.docAId === mainDoc.id) ? activeMapping.mapAtoB : activeMapping.mapBtoA;
@@ -116,10 +115,8 @@ export default function DocumentViewer() {
         const isDocA = mapping.docAId === mainDoc.id;
         const otherDocId = isDocA ? mapping.docBId : mapping.docAId;
         const map = isDocA ? mapping.mapAtoB : mapping.mapBtoA;
-
         const mappedGlobal = findNearestMappedLine(map, mappingPopover.globalLineIdx);
         const otherDoc = await db.documents.get(otherDocId);
-
         if (otherDoc) {
             openSidePanel(otherDoc as AppDocument, mapping);
             setSidePanelScrollTarget(mappedGlobal);
@@ -130,14 +127,12 @@ export default function DocumentViewer() {
     if (!mainDoc) {
         return (
             <div className="h-screen flex items-center justify-center bg-[#F8F7F4]">
-                <div className="animate-pulse font-lora text-muted">Loading Manuscript...</div>
+                <div className="animate-pulse font-lora text-muted">Loading Manuscript…</div>
             </div>
         );
     }
 
-    // Give distinct widths so the side panel behaves cleanly without getting blurry
     const mainPdfWidth = sideDoc ? 350 : 550;
-    const sidePdfWidth = sideDoc ? 350 : 550;
 
     return (
         <div className="h-screen flex flex-col bg-[#F8F7F4] overflow-hidden font-lora">
@@ -176,7 +171,7 @@ export default function DocumentViewer() {
                             isSidePanel
                             doc={sideDoc}
                             pdfUrl={sidePdfUrl}
-                            pdfWidth={sidePdfWidth}
+                            pdfWidth={350}
                             localHover={sideHover}
                             setLocalHover={setSideHover}
                             externalHighlight={sideExternalHighlight}
@@ -188,6 +183,9 @@ export default function DocumentViewer() {
                     </aside>
                 )}
             </div>
+
+            {/* Abbreviation panel — sits on top of everything, manages its own open/close */}
+            <AbbreviationPanel currentDoc={mainDoc} />
 
             {mappingPopover && (
                 <MappingSelector
@@ -203,7 +201,24 @@ export default function DocumentViewer() {
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e5e1; border-radius: 10px; }
+                
+                .abbr-user {
+                    background-color: #d1ead9;
+                    color: #2d5a40;
+                    padding: 0 3px;
+                    border-radius: 3px;
+                    border-bottom: 1.5px solid #7aab8a;
+                    cursor: help;
+                }
             `}</style>
         </div>
+    );
+}
+
+export default function DocumentViewer() {
+    return (
+        <AbbreviationProvider>
+            <DocumentViewerInner />
+        </AbbreviationProvider>
     );
 }
