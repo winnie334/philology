@@ -1,11 +1,10 @@
 'use client';
 
 import React from 'react';
-import { AppMapping, AppDocument } from '@/lib/db';
-import { XIcon } from './Icons';
+import {AppMapping, AppDocument} from '@/lib/db';
+import {XIcon} from './Icons';
 
 interface MappingSelectorProps {
-    /** Bounding rect of the link button that was clicked — popover anchors to this */
     anchorRect: DOMRect;
     currentDocId: number;
     mappings: AppMapping[];
@@ -45,7 +44,7 @@ export default function MappingSelector({
     return (
         <>
             {/* Transparent backdrop — click outside to close */}
-            <div className="fixed inset-0 z-[99]" onClick={onClose} />
+            <div className="fixed inset-0 z-[99]" onClick={onClose}/>
 
             {/* Popover card */}
             <div
@@ -72,7 +71,7 @@ export default function MappingSelector({
                         onClick={onClose}
                         className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-border/60 transition-colors"
                     >
-                        <XIcon />
+                        <XIcon/>
                     </button>
                 </div>
 
