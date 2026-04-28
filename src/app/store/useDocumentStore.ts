@@ -1,5 +1,5 @@
-import {create} from 'zustand';
-import {AppDocument, AppMapping, db} from '@/lib/db';
+import { create } from 'zustand';
+import { AppDocument, AppMapping, db } from '@/lib/db';
 
 interface DocumentState {
     mainDoc: AppDocument | null;
@@ -19,6 +19,7 @@ interface DocumentState {
     updateTranscription: (id: number, pIdx: number, lIdx: number, text: string) => Promise<void>;
     deleteTranscriptionLine: (id: number, pIdx: number, lIdx: number) => Promise<void>;
     deleteAllOnPage: (id: number, pIdx: number) => Promise<void>;
+    updatePageTranscriptions: (id: number, pIdx: number, newLines: any[]) => Promise<void>;
 
     sidePanelScrollTarget: number | null;
     setSidePanelScrollTarget: (target: number | null) => void;
@@ -26,7 +27,6 @@ interface DocumentState {
 
     mappingPopover: { globalLineIdx: number; rect: DOMRect } | null;
     setMappingPopover: (popover: { globalLineIdx: number; rect: DOMRect } | null) => void;
-    updatePageTranscriptions: (id: number, pIdx: number, newLines: any[]) => Promise<void>;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -37,30 +37,30 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     sideHover: null,
     zoomConfig: null,
 
-    setMainDoc: (doc) => set({mainDoc: doc}),
-    setMainHover: (mainHover) => set({mainHover}),
-    setZoom: (zoomConfig) => set({zoomConfig}),
+    setMainDoc: (doc) => set({ mainDoc: doc }),
+    setMainHover: (mainHover) => set({ mainHover }),
+    setZoom: (zoomConfig) => set({ zoomConfig }),
 
-    openSidePanel: (doc, mapping) => set({sideDoc: doc, activeMapping: mapping}),
-    closeSidePanel: () => set({sideDoc: null, activeMapping: null, sideHover: null}),
+    openSidePanel: (doc, mapping) => set({ sideDoc: doc, activeMapping: mapping }),
+    closeSidePanel: () => set({ sideDoc: null, activeMapping: null, sideHover: null }),
 
     updateTranscription: async (id, pIdx, lIdx, text) => {
         const doc = await db.documents.get(id);
         if (!doc) return;
         const trans = [...(doc.transcriptions ?? [])];
         const lines = JSON.parse(trans[pIdx] || '[]');
+
         if (lines[lIdx]) {
             lines[lIdx].text = text;
             trans[pIdx] = JSON.stringify(lines);
 
-            // 1. Optimistic UI Update (Instant, no refresh)
-            const currentDoc = get().mainDoc;
-            if (currentDoc && currentDoc.id === id) {
-                set({mainDoc: {...currentDoc, transcriptions: trans}});
-            }
+            // 1. Optimistic UI Update (Check both main and side docs)
+            const { mainDoc, sideDoc } = get();
+            if (mainDoc?.id === id) set({ mainDoc: { ...mainDoc, transcriptions: trans } });
+            if (sideDoc?.id === id) set({ sideDoc: { ...sideDoc, transcriptions: trans } });
 
             // 2. Background DB Sync
-            await db.documents.update(id, {transcriptions: trans});
+            await db.documents.update(id, { transcriptions: trans });
         }
     },
 
@@ -72,14 +72,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         lines.splice(lIdx, 1);
         trans[pIdx] = JSON.stringify(lines);
 
-        // 1. Optimistic UI Update
-        const currentDoc = get().mainDoc;
-        if (currentDoc && currentDoc.id === id) {
-            set({mainDoc: {...currentDoc, transcriptions: trans}});
-        }
+        const { mainDoc, sideDoc } = get();
+        if (mainDoc?.id === id) set({ mainDoc: { ...mainDoc, transcriptions: trans } });
+        if (sideDoc?.id === id) set({ sideDoc: { ...sideDoc, transcriptions: trans } });
 
-        // 2. Background DB Sync
-        await db.documents.update(id, {transcriptions: trans});
+        await db.documents.update(id, { transcriptions: trans });
     },
 
     deleteAllOnPage: async (id, pIdx) => {
@@ -88,19 +85,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const trans = [...(doc.transcriptions ?? [])];
         trans[pIdx] = '[]';
 
-        const currentDoc = get().mainDoc;
-        if (currentDoc && currentDoc.id === id) {
-            set({mainDoc: {...currentDoc, transcriptions: trans}});
-        }
+        const { mainDoc, sideDoc } = get();
+        if (mainDoc?.id === id) set({ mainDoc: { ...mainDoc, transcriptions: trans } });
+        if (sideDoc?.id === id) set({ sideDoc: { ...sideDoc, transcriptions: trans } });
 
-        await db.documents.update(id, {transcriptions: trans});
+        await db.documents.update(id, { transcriptions: trans });
     },
 
-    sidePanelScrollTarget: null,
-    setSidePanelScrollTarget: (sidePanelScrollTarget) => set({sidePanelScrollTarget}),
-    setSideHover: (sideHover) => set({sideHover}),
-    mappingPopover: null,
-    setMappingPopover: (mappingPopover) => set({mappingPopover}),
     updatePageTranscriptions: async (id, pIdx, newLines) => {
         const doc = await db.documents.get(id);
         if (!doc) return;
@@ -108,11 +99,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const trans = [...(doc.transcriptions ?? [])];
         trans[pIdx] = JSON.stringify(newLines);
 
-        const currentDoc = get().mainDoc;
-        if (currentDoc && currentDoc.id === id) {
-            set({mainDoc: {...currentDoc, transcriptions: trans}});
-        }
+        const { mainDoc, sideDoc } = get();
+        if (mainDoc?.id === id) set({ mainDoc: { ...mainDoc, transcriptions: trans } });
+        if (sideDoc?.id === id) set({ sideDoc: { ...sideDoc, transcriptions: trans } });
 
-        await db.documents.update(id, {transcriptions: trans});
+        await db.documents.update(id, { transcriptions: trans });
     },
+
+    sidePanelScrollTarget: null,
+    setSidePanelScrollTarget: (sidePanelScrollTarget) => set({ sidePanelScrollTarget }),
+    setSideHover: (sideHover) => set({ sideHover }),
+    mappingPopover: null,
+    setMappingPopover: (mappingPopover) => set({ mappingPopover }),
 }));
