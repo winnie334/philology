@@ -61,29 +61,3 @@ export function findNearestMappedLine(
     }
     return map[String(nearest)];
 }
-
-/**
- * Render a transcription string, turning <abbr>…</abbr> spans into styled
- * highlighted nodes — identical rendering in both the main panel and side panel.
- */
-export function renderAbbrText(val: string): React.ReactNode {
-    const parts = val.split(/(<abbr>.*?<\/abbr>)/g);
-    return (
-        <>
-            {parts.map((part, i) => {
-                if (part.startsWith('<abbr>') && part.endsWith('</abbr>')) {
-                    const inner = part.replace(/<\/?abbr>/g, '');
-                    return (
-                        <span
-                            key={i}
-                            className="bg-accent/15 text-accent px-1 rounded border-b border-accent/40 font-semibold"
-                        >
-              {inner}
-            </span>
-                    );
-                }
-                return <span key={i}>{part}</span>;
-            })}
-        </>
-    );
-}

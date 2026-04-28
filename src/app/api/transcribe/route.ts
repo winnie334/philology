@@ -59,11 +59,6 @@ STRICT TRANSCRIPTION PROTOCOL:
    - Interpret them as abbreviation marks, NOT digits. Resolve them into Latin letters.
    - NEVER output digits in the transcription.
 
-3. ABBREVIATIONS (CRITICAL):
-   - ANY word that was shortened or used a ligature in the manuscript MUST be wrapped in <abbr> tags.
-   - The tag signals that the original scribe used shorthand, even if your expansion is 100% certain.
-   - Examples: <abbr>quecumque</abbr>, <abbr>conclusio</abbr>, <abbr>dominus</abbr>.
-
 4. PHILOLOGICAL CONFIDENCE:
    - Prioritize grammatically and contextually correct Latin (proper case endings: -em, -is, -ibus) over literal "character-by-character" guessing.
    - Use your expertise in medieval medical terminology to ensure the text is linguistically coherent.

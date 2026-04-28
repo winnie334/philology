@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef, memo } from 'react';
-import { renderAbbrText } from '../lib/lineUtils';
 import { PencilIcon, TrashIcon, CheckIcon, XIcon, LinkIcon } from './Icons';
 
 interface SentenceRowProps {
@@ -67,7 +66,7 @@ const SentenceRow = memo(
                         </div>
                     ) : (
                         <div className="flex-1 flex items-start justify-between gap-4">
-                            <p className="text-[14px] font-lora text-ink leading-relaxed">{renderAbbrText(text)}</p>
+                            <p className="text-[14px] font-lora text-ink leading-relaxed"><span>{text}</span>;</p>
                             {!readOnly && (
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
                                     <button
