@@ -44,7 +44,6 @@ STRICT TRANSCRIPTION PROTOCOL:
 
 0. COLUMN DETECTION & READING PATH:
    - Identify if the page is single or multi-column.
-   - You MUST follow a strict linear horizontal-then-vertical path within the logical text block.
    - If TWO columns are present: Transcribe the entirety of the LEFT column line-by-line (top to bottom), then the entirety of the RIGHT column line-by-line (top to bottom).
    - NEVER bridge the gap between columns in a single line entry.
 
