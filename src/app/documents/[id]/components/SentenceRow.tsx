@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, memo } from 'react';
-import { PencilIcon, TrashIcon, CheckIcon, XIcon, LinkIcon } from './Icons';
-import { useAbbreviations, renderWithAbbreviations } from '../lib/AbbreviationContext';
+import React, {useState, useEffect, useRef, memo} from 'react';
+import {PencilIcon, TrashIcon, CheckIcon, XIcon, LinkIcon} from './Icons';
+import {useAbbreviations, renderWithAbbreviations} from '../lib/AbbreviationContext';
+import {PlusSquareIcon} from "lucide-react";
 
 interface SentenceRowProps {
     text: string;
@@ -16,28 +17,38 @@ interface SentenceRowProps {
     onHover: (active: boolean) => void;
     onZoomRequest: () => void;
     onMapRequest: (rect: DOMRect) => void;
+    onFillRequest: () => void;
+    enableOpenCollationButton: boolean;
 }
 
 const SentenceRow = memo(
     React.forwardRef<HTMLDivElement, SentenceRowProps>(
         (
-            { text, idx, isActive, isExternalHighlight, readOnly = false,
-                onSave, onDelete, onHover, onZoomRequest, onMapRequest },
+            {
+                text, idx, isActive, isExternalHighlight, readOnly = false,
+                onSave, onDelete, onHover, onZoomRequest, onMapRequest, onFillRequest, enableOpenCollationButton
+            },
             ref
         ) => {
             const [isEditing, setIsEditing] = useState(false);
             const [draft, setDraft] = useState(text);
             const inputRef = useRef<HTMLInputElement>(null);
 
-            const { displayedAbbreviations } = useAbbreviations();
+            const {displayedAbbreviations} = useAbbreviations();
 
-            useEffect(() => { if (isEditing) inputRef.current?.focus(); }, [isEditing]);
+            useEffect(() => {
+                if (isEditing) inputRef.current?.focus();
+            }, [isEditing]);
 
             const handleCommit = (e?: React.MouseEvent | React.KeyboardEvent) => {
-                e?.stopPropagation(); onSave(draft); setIsEditing(false);
+                e?.stopPropagation();
+                onSave(draft);
+                setIsEditing(false);
             };
             const handleCancel = (e: React.MouseEvent) => {
-                e.stopPropagation(); setDraft(text); setIsEditing(false);
+                e.stopPropagation();
+                setDraft(text);
+                setIsEditing(false);
             };
 
             let rowCls = 'border-l-4 border-transparent hover:bg-black/[0.02]';
@@ -68,11 +79,11 @@ const SentenceRow = memo(
                             />
                             <button onClick={handleCommit}
                                     className="p-1.5 bg-accent text-white rounded hover:bg-accent/80 shadow-sm transition-colors">
-                                <CheckIcon />
+                                <CheckIcon/>
                             </button>
                             <button onClick={handleCancel}
                                     className="p-1.5 bg-white border border-border text-muted rounded hover:text-ink shadow-sm transition-colors">
-                                <XIcon />
+                                <XIcon/>
                             </button>
                         </div>
                     ) : (
@@ -81,7 +92,20 @@ const SentenceRow = memo(
                                 {renderWithAbbreviations(text, displayedAbbreviations)}
                             </p>
                             {!readOnly && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                <div
+                                    className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                    {enableOpenCollationButton && <button
+                                        title="Push to Comparison Tool"
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            onFillRequest();
+                                        }}
+                                        className="p-1 text-muted hover:text-amber-600 transition-colors"
+                                    >
+                                        <PlusSquareIcon/>
+                                    </button>}
+
+
                                     <button
                                         title="Compare in another manuscript"
                                         onClick={e => {
@@ -89,14 +113,20 @@ const SentenceRow = memo(
                                             onMapRequest((e.currentTarget as HTMLElement).getBoundingClientRect());
                                         }}
                                         className="p-1 text-muted hover:text-accent transition-colors"
-                                    ><LinkIcon /></button>
-                                    <button onClick={e => { e.stopPropagation(); setIsEditing(true); }}
+                                    ><LinkIcon/></button>
+                                    <button onClick={e => {
+                                        e.stopPropagation();
+                                        setIsEditing(true);
+                                    }}
                                             className="p-1 text-muted hover:text-accent transition-colors">
-                                        <PencilIcon />
+                                        <PencilIcon/>
                                     </button>
-                                    <button onClick={e => { e.stopPropagation(); if (confirm('Delete this line?')) onDelete(); }}
+                                    <button onClick={e => {
+                                        e.stopPropagation();
+                                        if (confirm('Delete this line?')) onDelete();
+                                    }}
                                             className="p-1 text-muted hover:text-red-500 transition-colors">
-                                        <TrashIcon />
+                                        <TrashIcon/>
                                     </button>
                                 </div>
                             )}

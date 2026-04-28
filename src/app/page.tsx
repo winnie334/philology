@@ -6,6 +6,7 @@ import {useRouter} from 'next/navigation';
 import {db, AppDocument, AppMapping} from '@/lib/db';
 import {PhilologicalAnalysisResult} from "@/types/philology";
 import {PhilologyAnalyzer} from "@/components/PhilologyAnalyzer";
+import ManuscriptAnalytics from "@/components/ManuscriptNetwork";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -472,6 +473,10 @@ export default function HomePage() {
                         </div>
 
                         <PhilologyAnalyzer/>
+
+                        <div className="border-t border-border/50 pt-8">
+                            <ManuscriptAnalytics/>
+                        </div>
                     </div>
                 )}
             </main>

@@ -1,4 +1,4 @@
-import Dexie, { Table } from 'dexie';
+import Dexie, {Table} from 'dexie';
 
 export interface AppDocument {
     id?: number;
@@ -8,6 +8,17 @@ export interface AppDocument {
     type: string;
     createdAt: number;
     transcriptions: string[]; // per page: JSON string of {text, box_2d}[]
+}
+
+export interface Variation {
+    id?: number;
+    type: 'similarity' | 'difference';
+    docAId: number;
+    docBId: number;
+    locA: { pIdx: number; lIdx: number; text: string };
+    locB: { pIdx: number; lIdx: number; text: string };
+    note: string;
+    createdAt: number;
 }
 
 export interface AppMapping {
@@ -30,10 +41,11 @@ class PhilologyDB extends Dexie {
     documents!: Table<AppDocument>;
     mappings!: Table<AppMapping>;
     abbreviations!: Table<AppAbbreviation>;
+    variations!: Table<Variation>;
 
     constructor() {
         super('PhilologyDB');
-        this.version(1).stores({ documents: '++id, name, createdAt' });
+        this.version(1).stores({documents: '++id, name, createdAt'});
         this.version(2).stores({
             documents: '++id, name, createdAt',
             mappings: '++id, docAId, docBId, createdAt',
@@ -42,6 +54,12 @@ class PhilologyDB extends Dexie {
             documents: '++id, name, createdAt',
             mappings: '++id, docAId, docBId, createdAt',
             abbreviations: '++id, abbr, createdAt',
+        });
+        this.version(4).stores({
+            documents: '++id, name, createdAt',
+            mappings: '++id, docAId, docBId, createdAt',
+            abbreviations: '++id, abbr, createdAt',
+            variations: '++id, docAId, docBId, type'
         });
     }
 }

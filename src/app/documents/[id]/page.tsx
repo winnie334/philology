@@ -15,6 +15,7 @@ import Header from '@/app/documents/[id]/components/Header';
 import DocumentPanel from '@/app/documents/[id]/components/DocumentPanel';
 import AbbreviationPanel from '@/app/documents/[id]/components/AbbreviationPanel';
 import { AbbreviationProvider } from '@/app/documents/[id]/lib/AbbreviationContext';
+import ComparisonOverlay from "@/app/documents/[id]/components/ComparisonOverlay";
 
 if (typeof window !== 'undefined') {
     pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -33,6 +34,7 @@ function DocumentViewerInner() {
         sideHover, setSideHover,
         mappingPopover, setMappingPopover,
         sidePanelScrollTarget, setSidePanelScrollTarget,
+        mainPanelScrollTarget, setMainPanelScrollTarget,
         activeMapping,
         resetStore,
     } = useDocumentStore();
@@ -40,7 +42,6 @@ function DocumentViewerInner() {
     const [pdfDocProxy, setPdfDocProxy] = useState<any>(null);
     const [mainPdfUrl, setMainPdfUrl] = useState<string | null>(null);
     const [sidePdfUrl, setSidePdfUrl] = useState<string | null>(null);
-    const [mainPanelScrollTarget, setMainPanelScrollTarget] = useState<number | null>(null);
 
     const allMappings = useLiveQuery(() => db.mappings.toArray(), []);
     const allDocuments = useLiveQuery(() => db.documents.toArray(), []);
@@ -180,6 +181,8 @@ function DocumentViewerInner() {
                             scrollTargetGlobal={sidePanelScrollTarget}
                             onScrollTargetConsumed={() => setSidePanelScrollTarget(null)}
                         />
+
+                        <ComparisonOverlay/>
                     </aside>
                 )}
             </div>

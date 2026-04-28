@@ -55,7 +55,7 @@ export const PhilologyAnalyzer: React.FC = () => {
                     {/* Stemma Hypotheses */}
                     <section>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {data.stemmaHypotheses.map((hypo, idx) => (
+                            {data.stemmaHypotheses.map((hypo:any, idx:any) => (
                                 <div key={idx} className="bg-paper border border-accent/20 p-7 rounded-2xl shadow-sm relative">
                                     <div className="absolute top-4 right-5 text-[11px] font-bold uppercase tracking-widest text-accent opacity-70">
                                         {Math.round(hypo.probability * 100)}% Match
@@ -86,7 +86,7 @@ export const PhilologyAnalyzer: React.FC = () => {
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/50">
-                                {data.variants.map((variant, idx) => (
+                                {data.variants.map((variant: any, idx: any) => (
                                     <tr key={idx} className="hover:bg-accent/[0.015] transition-colors group">
                                         {/* Excerpt context */}
                                         <td className="p-6 align-top">
@@ -105,7 +105,7 @@ export const PhilologyAnalyzer: React.FC = () => {
                                         {/* Witness Comparison */}
                                         <td className="p-6 align-top">
                                             <div className="space-y-2.5">
-                                                {variant.witnesses.map((w, wIdx) => {
+                                                {variant.witnesses.map((w: any, wIdx: any) => {
                                                     const isDifferent = w.reading.trim().toLowerCase() !== variant.baseText.trim().toLowerCase();
                                                     return (
                                                         <div key={wIdx} className="flex gap-3 items-start text-[16px] font-lora">
