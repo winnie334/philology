@@ -125,7 +125,7 @@ export default function ComparisonOverlay() {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="hidden sm:flex items-center gap-2 px-3 py-0.5 bg-parchment/60 rounded-full border border-border/50">
-                            <span className="text-[9px] font-bold text-ink/60 uppercase truncate max-w-[80px] font-lora">{mainDoc.name}</span>
+                            <span className="text-[9px] font-bold text-ink/60 uppercase truncate max-w-[80px] font-lora">{mainDoc!.name}</span>
                             <span className="text-muted/30 text-[9px]">↔</span>
                             <span className="text-[9px] font-bold text-ink/60 uppercase truncate max-w-[80px] font-lora">{sideDoc.name}</span>
                         </div>
