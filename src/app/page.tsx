@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useRouter } from 'next/navigation';
-import { db, AppDocument, AppMapping } from '@/lib/db';
+import React, {useState, useRef, useCallback} from 'react';
+import {useLiveQuery} from 'dexie-react-hooks';
+import {useRouter} from 'next/navigation';
+import {db, AppDocument, AppMapping} from '@/lib/db';
+import {PhilologicalAnalysisResult} from "@/types/philology";
+import {PhilologyAnalyzer} from "@/components/PhilologyAnalyzer";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,7 +23,11 @@ function formatDate(ts: number): string {
 
 function docHasTranscriptions(doc: AppDocument): boolean {
     return (doc.transcriptions ?? []).some(t => {
-        try { return JSON.parse(t || '[]').length > 0; } catch { return false; }
+        try {
+            return JSON.parse(t || '[]').length > 0;
+        } catch {
+            return false;
+        }
     });
 }
 
@@ -64,7 +70,9 @@ function PdfFileIcon() {
             <path d="M14 1H3C1.9 1 1 1.9 1 3v22c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9l-7-8z"
                   fill="#FDFAF5" stroke="#D5C9B5" strokeWidth="1.2"/>
             <path d="M14 1v8h7" stroke="#D5C9B5" strokeWidth="1.2" fill="none"/>
-            <text x="3.5" y="22" fontFamily="Georgia, serif" fontSize="6.5" fontWeight="700" fill="#B5732A" letterSpacing="0.3">PDF</text>
+            <text x="3.5" y="22" fontFamily="Georgia, serif" fontSize="6.5" fontWeight="700" fill="#B5732A"
+                  letterSpacing="0.3">PDF
+            </text>
         </svg>
     );
 }
@@ -90,7 +98,8 @@ function DocumentRow({
             onClick={onClick}
             className="group relative flex items-center gap-5 px-6 py-5 rounded-2xl border border-border bg-paper cursor-pointer transition-all duration-200 hover:border-accent/60 hover:shadow-[0_2px_20px_rgba(181,115,42,0.10)] hover:-translate-y-px"
         >
-            <div className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-transparent group-hover:bg-accent transition-all duration-300"/>
+            <div
+                className="absolute left-0 top-5 bottom-5 w-[3px] rounded-r-full bg-transparent group-hover:bg-accent transition-all duration-300"/>
             <div className="shrink-0 transition-transform duration-200 group-hover:scale-105">
                 <PdfFileIcon/>
             </div>
@@ -119,7 +128,8 @@ function DocumentRow({
                 </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-        <span className="text-[11px] text-accent font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-lora">
+        <span
+            className="text-[11px] text-accent font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-200 font-lora">
           Open →
         </span>
                 <button
@@ -136,10 +146,11 @@ function DocumentRow({
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
-function EmptyState({ onUpload }: { onUpload: () => void }) {
+function EmptyState({onUpload}: { onUpload: () => void }) {
     return (
         <div className="flex flex-col items-center justify-center py-28 text-center animate-fade-in">
-            <div className="w-24 h-24 rounded-3xl border-2 border-dashed border-border/80 flex items-center justify-center mb-8">
+            <div
+                className="w-24 h-24 rounded-3xl border-2 border-dashed border-border/80 flex items-center justify-center mb-8">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8BAA8" strokeWidth="1.3"
                      strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -182,7 +193,8 @@ function MappingBanner({
     const lineCount = Object.keys(mapping.mapAtoB).length;
 
     return (
-        <div className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-accent/30 bg-accent/5 animate-fade-in">
+        <div
+            className="flex items-center gap-4 px-5 py-3.5 rounded-xl border border-accent/30 bg-accent/5 animate-fade-in">
             <div className="shrink-0 w-7 h-7 rounded-full bg-accent/15 flex items-center justify-center">
                 <LinkIcon/>
             </div>
@@ -199,6 +211,7 @@ function MappingBanner({
         </div>
     );
 }
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -284,7 +297,7 @@ export default function HomePage() {
         try {
             const res = await fetch('/api/mapTwoDocuments', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     docAId: docA.id,
                     docBId: docB.id,
@@ -294,7 +307,7 @@ export default function HomePage() {
             });
 
             if (!res.ok) throw new Error(await res.text());
-            const { mapAtoB, mapBtoA } = await res.json();
+            const {mapAtoB, mapBtoA} = await res.json();
 
             await db.mappings.add({
                 docAId: docA.id!,
@@ -319,17 +332,25 @@ export default function HomePage() {
         docHasTranscriptions(lastTwo[0]) &&
         docHasTranscriptions(lastTwo[1]);
 
+
     return (
         <div
             className="min-h-screen bg-parchment"
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false); }}
+            onDragOver={e => {
+                e.preventDefault();
+                setDragOver(true);
+            }}
+            onDragLeave={e => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
+            }}
             onDrop={handleDrop}
         >
             {/* Drag overlay */}
             {dragOver && (
-                <div className="fixed inset-0 z-50 bg-parchment/92 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
-                    <div className="border-2 border-dashed border-accent/60 rounded-3xl px-20 py-16 flex flex-col items-center gap-4">
+                <div
+                    className="fixed inset-0 z-50 bg-parchment/92 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
+                    <div
+                        className="border-2 border-dashed border-accent/60 rounded-3xl px-20 py-16 flex flex-col items-center gap-4">
                         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#B5732A" strokeWidth="1.5">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="17 8 12 3 7 8"/>
@@ -345,7 +366,8 @@ export default function HomePage() {
                 <div className="max-w-3xl mx-auto px-8 py-5 flex items-center justify-between">
                     <div>
                         <h1 className="font-playfair text-[28px] font-bold text-ink leading-none tracking-tight">Scriptoria</h1>
-                        <p className="text-[10px] text-muted mt-1 uppercase tracking-[0.18em] font-lora">Philological Archive</p>
+                        <p className="text-[10px] text-muted mt-1 uppercase tracking-[0.18em] font-lora">Philological
+                            Archive</p>
                     </div>
                     <button
                         onClick={() => fileInputRef.current?.click()}
@@ -354,7 +376,8 @@ export default function HomePage() {
                     >
                         {uploading ? (
                             <>
-                                <span className="inline-block w-3.5 h-3.5 border-[2px] border-paper/30 border-t-paper rounded-full animate-spin"/>
+                                <span
+                                    className="inline-block w-3.5 h-3.5 border-[2px] border-paper/30 border-t-paper rounded-full animate-spin"/>
                                 Uploading…
                             </>
                         ) : (
@@ -373,12 +396,12 @@ export default function HomePage() {
             </header>
 
             {/* Main */}
-            <main className="max-w-3xl mx-auto px-8 py-10">
+            <main className="max-w-4xl mx-auto px-8 py-10">
                 {!documents ? (
                     <div className="space-y-3">
                         {[1, 2, 3].map(i => (
                             <div key={i} className="h-[78px] rounded-2xl bg-paper border border-border animate-pulse"
-                                 style={{ animationDelay: `${i * 0.08}s` }}/>
+                                 style={{animationDelay: `${i * 0.08}s`}}/>
                         ))}
                     </div>
                 ) : documents.length === 0 ? (
@@ -392,7 +415,8 @@ export default function HomePage() {
                             </p>
                             <ul className="space-y-2.5">
                                 {documents.map((doc, i) => (
-                                    <div key={doc.id} className="animate-slide-up" style={{ animationDelay: `${i * 0.04}s` }}>
+                                    <div key={doc.id} className="animate-slide-up"
+                                         style={{animationDelay: `${i * 0.04}s`}}>
                                         <DocumentRow
                                             doc={doc}
                                             isMapped={mappedDocIds.has(doc.id!)}
@@ -407,7 +431,8 @@ export default function HomePage() {
                         {/* Mapping section */}
                         <div className="border-t border-border/50 pt-8">
                             <div className="flex items-center justify-between mb-5">
-                                <p className="text-[10px] text-muted uppercase tracking-[0.18em] font-lora">Manuscript Collation</p>
+                                <p className="text-[10px] text-muted uppercase tracking-[0.18em] font-lora">Manuscript
+                                    Collation</p>
                                 <button
                                     onClick={onStartMapping}
                                     disabled={!canMap || isMappingInProgress}
@@ -422,7 +447,8 @@ export default function HomePage() {
                                 >
                                     {isMappingInProgress ? (
                                         <>
-                                            <span className="inline-block w-3.5 h-3.5 border-[2px] border-accent/30 border-t-accent rounded-full animate-spin"/>
+                                            <span
+                                                className="inline-block w-3.5 h-3.5 border-[2px] border-accent/30 border-t-accent rounded-full animate-spin"/>
                                             Mapping…
                                         </>
                                     ) : (
@@ -444,6 +470,8 @@ export default function HomePage() {
                                 </p>
                             )}
                         </div>
+
+                        <PhilologyAnalyzer/>
                     </div>
                 )}
             </main>
