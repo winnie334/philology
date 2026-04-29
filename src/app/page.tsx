@@ -431,33 +431,52 @@ export default function HomePage() {
                         </div>
 
                         {/* Mapping section */}
+                        {/* Mapping section */}
                         <div className="border-t border-border/50 pt-8">
-                            <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center justify-between mb-2">
                                 <p className="text-[10px] text-muted uppercase tracking-[0.18em] font-lora">Manuscript
                                     Collation</p>
-                                <button
-                                    onClick={onStartMapping}
-                                    disabled={!canMap || isMappingInProgress}
-                                    title={
-                                        documents.length < 2
-                                            ? 'Need at least 2 documents'
-                                            : !canMap
-                                                ? 'Both documents must be transcribed first'
-                                                : 'Create alignment between the two most recent documents'
-                                    }
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-lora font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] border-accent/40 text-accent hover:bg-accent hover:text-paper hover:border-accent cursor-pointer"
-                                >
-                                    {isMappingInProgress ? (
-                                        <>
-                                            <span
-                                                className="inline-block w-3.5 h-3.5 border-[2px] border-accent/30 border-t-accent rounded-full animate-spin"/>
-                                            Mapping…
-                                        </>
-                                    ) : (
-                                        <><LinkIcon/> Begin Mapping</>
+                                <div className="flex items-center gap-2">
+                                    {mappings && mappings.length > 0 && (
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm('Remove all mappings? This cannot be undone.')) {
+                                                    await db.mappings.clear();
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-lora text-muted border border-border hover:border-danger/40 hover:text-danger hover:bg-danger/5 transition-all cursor-pointer"
+                                        >
+                                            Clear all
+                                        </button>
                                     )}
-                                </button>
+                                    <button
+                                        onClick={onStartMapping}
+                                        disabled={!canMap || isMappingInProgress}
+                                        title={
+                                            documents.length < 2
+                                                ? 'Need at least 2 documents'
+                                                : !canMap
+                                                    ? 'Both documents must be transcribed first'
+                                                    : 'Create alignment between the two most recent documents'
+                                        }
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-lora font-medium border transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] border-accent/40 text-accent hover:bg-accent hover:text-paper hover:border-accent cursor-pointer"
+                                    >
+                                        {isMappingInProgress ? (
+                                            <>
+                                                <span
+                                                    className="inline-block w-3.5 h-3.5 border-[2px] border-accent/30 border-t-accent rounded-full animate-spin"/>
+                                                Mapping…
+                                            </>
+                                        ) : (
+                                            <><LinkIcon/> Begin Mapping</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
+
+                            <p className="text-xs text-muted/70 font-lora mb-5 leading-relaxed">
+                                Align your two most recently added manuscripts so you can browse them side by side. Both must have at least one page transcribed.
+                            </p>
 
                             {/* Existing mappings */}
                             {mappings && mappings.length > 0 ? (
@@ -468,7 +487,6 @@ export default function HomePage() {
                                 </div>
                             ) : (
                                 <p className="text-xs text-muted/60 font-lora italic">
-                                    No mappings yet. Transcribe two documents and press Begin Mapping to align them.
                                 </p>
                             )}
                         </div>
